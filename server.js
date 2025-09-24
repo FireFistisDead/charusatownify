@@ -127,7 +127,49 @@ app.get('/logout', (req, res) => {
 app.get('/dashboard', requireLogin, (req, res) => {
   res.send('This is the dashboard, only for logged in users.');
 });
+app.get('/report-found', requireLogin, async (req, res) => {
+  const user = await User.findById(req.session.userId);
+  res.render('report-found', { 
+    user: user,
+    error: '',
+    success: ''
+  });
+});
 
+app.post('/report-found', requireLogin, async (req, res) => {
+  const user = await User.findById(req.session.userId);
+  const { title, category, description, location, dateFound } = req.body;
+  
+  if (!title || !category || !description || !location || !dateFound) {
+    return res.render('report-found', { 
+      user: user,
+      error: 'All fields are required',
+      success: ''
+    });
+  }
+  
+  try {
+    await FoundItem.create({
+      title,
+      category,
+      description,
+      location,
+      dateFound: new Date(dateFound)
+    });
+    
+    res.render('report-found', { 
+      user: user,
+      error: '',
+      success: 'Found item reported successfully!'
+    });
+  } catch (error) {
+    res.render('report-found', { 
+      user: user,
+      error: 'Error reporting item. Please try again.',
+      success: ''
+    });
+  }
+});
 // Start server
 app.listen(3000, () => {
   console.log('Charusat Ownify running at http://localhost:3000');

@@ -170,6 +170,14 @@ app.post('/report-found', requireLogin, async (req, res) => {
     });
   }
 });
+app.get('/report-lost', requireLogin, async (req, res) => {
+  const user = await User.findById(req.session.userId);
+  res.render('report-lost', { 
+    user : user,
+    error: '',
+    success: ''
+  });
+});
 // Start server
 app.listen(3000, () => {
   console.log('Charusat Ownify running at http://localhost:3000');

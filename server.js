@@ -213,6 +213,49 @@ app.post('/report-lost', requireLogin, async (req, res) => {
     });
   }
 });
+
+// Route to view individual found item
+app.get('/found/:id', requireLogin, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+    const item = await FoundItem.findById(req.params.id);
+    
+    if (!item) {
+      return res.redirect('/');
+    }
+    
+    res.render('item-details', {
+      user: user,
+      item: item,
+      type: 'found'
+    });
+  } catch (error) {
+    console.error('Error fetching found item:', error);
+    res.redirect('/');
+  }
+});
+
+// Route to view individual lost item
+app.get('/lost/:id', requireLogin, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+    const item = await LostItem.findById(req.params.id);
+    
+    if (!item) {
+      return res.redirect('/');
+    }
+    
+    res.render('item-details', {
+      user: user,
+      item: item,
+      type: 'lost'
+    });
+  } catch (error) {
+    console.error('Error fetching lost item:', error);
+    res.redirect('/');
+  }
+});
+
 // Start server
 app.listen(3000, () => {
   console.log('Charusat Ownify running at http://localhost:3000');

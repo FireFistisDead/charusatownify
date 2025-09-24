@@ -1,37 +1,59 @@
 <%- include('partials/header', { user: user }) %>
 
-<h3 style="text-align:center;">Report Found Item</h3>
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h3 class="text-center mb-4" style="color:rgb(0,102,179)">Report Found Item</h3>
 
-<% if (error) { %><div style="color:#b91c1c; margin-bottom:10px;"><%= error %></div><% } %>
-<% if (success) { %><div style="color:#15803d; margin-bottom:10px;"><%= success %></div><% } %>
+          <% if (error) { %>
+            <div class="alert alert-danger"><%= error %></div>
+          <% } %>
+          <% if (success) { %>
+            <div class="alert alert-success"><%= success %></div>
+          <% } %>
 
-<form action="/report-found" method="post">
-  <div class="form-group">
-    <label>Title</label>
-    <input type="text" name="title" required>
+          <form action="/report-found" method="post">
+            <div class="mb-3">
+              <label class="form-label">Title</label>
+              <input type="text" name="title" class="form-control" placeholder="e.g. Found Phone" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Category</label>
+              <select name="category" class="form-select" required>
+                <option value="">Select category</option>
+                <option>Phone</option>
+                <option>Wallet</option>
+                <option>Keys</option>
+                <option>ID Card</option>
+                <option>Other</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Description</label>
+              <textarea name="description" class="form-control" rows="3" placeholder="Describe the item" required></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Location</label>
+              <input type="text" name="location" class="form-control" placeholder="Where did you find it?" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Date Found</label>
+              <input type="date" name="dateFound" class="form-control" required>
+            </div>
+
+            <button type="submit" class="btn w-100" style="background-color:rgb(0,102,179);color:#fff;">Submit Report</button>
+          </form>
+
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="form-group">
-    <label>Category</label>
-    <select name="category" required>
-      <option value="">Select</option>
-      <option>Phone</option><option>Wallet</option><option>Keys</option><option>ID Card</option><option>Other</option>
-    </select>
-  </div>
-  <div class="form-group">
-    <label>Description</label>
-    <textarea name="description" required></textarea>
-  </div>
-  <div class="form-group">
-    <label>Location</label>
-    <input type="text" name="location" required>
-  </div>
-  <div class="form-group">
-    <label>Date Found</label>
-    <input type="date" name="dateFound" required>
-  </div>
-  <div style="margin-top:12px;">
-    <button class="btn" type="submit">Submit Report</button>
-  </div>
-</form>
+</div>
 
 <%- include('partials/footer') %>

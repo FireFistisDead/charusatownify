@@ -1,0 +1,51 @@
+<%- include('partials/header', { title: 'Home' }) %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Report Found Item - Charusat Ownify</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('partials/header', { user: (user || null) }) %>
+
+  <div class="container">
+    <h3 style="text-align:center;">Report Found Item</h3>
+
+    <% if (error) { %><div style="color:#b91c1c; margin-bottom:10px;"><%= error %></div><% } %>
+    <% if (success) { %><div style="color:#15803d; margin-bottom:10px;"><%= success %></div><% } %>
+
+    <form action="/report-found" method="post">
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" name="title" required>
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select name="category" required>
+          <option value="">Select</option>
+          <option>Phone</option><option>Wallet</option><option>Keys</option><option>ID Card</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea name="description" required></textarea>
+      </div>
+      <div class="form-group">
+        <label>Location</label>
+        <input type="text" name="location" required>
+      </div>
+      <div class="form-group">
+        <label>Date Found</label>
+        <input type="date" name="dateFound" required>
+      </div>
+      <div style="margin-top:12px;">
+        <button class="btn" type="submit">Submit Report</button>
+      </div>
+    </form>
+  </div>
+
+  <%- include('partials/footer') %>
+</body>
+</html>
+<%- include('partials/footer') %>

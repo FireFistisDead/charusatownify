@@ -173,10 +173,45 @@ app.post('/report-found', requireLogin, async (req, res) => {
 app.get('/report-lost', requireLogin, async (req, res) => {
   const user = await User.findById(req.session.userId);
   res.render('report-lost', { 
-    user : user,
+    user: user,
     error: '',
     success: ''
   });
+});
+
+app.post('/report-lost', requireLogin, async (req, res) => {
+  const user = await User.findById(req.session.userId);
+  const { title, category, description, location, dateLost } = req.body;
+  
+  if (!title || !category || !description || !location || !dateLost) {
+    return res.render('report-lost', { 
+      user: user,
+      error: 'All fields are required',
+      success: ''
+    });
+  }
+  
+  try {
+    await LostItem.create({
+      title,
+      category,
+      description,
+      location,
+      dateLost: new Date(dateLost)
+    });
+    
+    res.render('report-lost', { 
+      user: user,
+      error: '',
+      success: 'Lost item reported successfully!'
+    });
+  } catch (error) {
+    res.render('report-lost', { 
+      user: user,
+      error: 'Error reporting item. Please try again.',
+      success: ''
+    });
+  }
 });
 // Start server
 app.listen(3000, () => {

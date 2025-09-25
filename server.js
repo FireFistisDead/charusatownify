@@ -5,11 +5,10 @@ const session = require('express-session');
 
 const app = express();
 
-// MongoDB connect
-mongoose.connect('mongodb://127.0.0.1:27017/charusat_ownify', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+// ✅ MongoDB connect (removed deprecated options)
+mongoose.connect('mongodb://127.0.0.1:27017/charusat_ownify')
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 // Schemas
 const userSchema = new mongoose.Schema({
@@ -89,10 +88,22 @@ app.get('/', async (req, res) => {
 
 // Signup & Login
 app.get('/signup', (req, res) => res.render('signup', { error: '' }));
+
 app.post('/signup', async (req, res) => {
-  const { name, email, password } = req.body;
-  if (!name || !email || !password)
-    return res.render('signup', { error: 'All fields required' });
+  let { name, email, password } = req.body;
+
+  // ✅ Validate name (letters and spaces only)
+  if (!/^[A-Za-z\s]+$/.test(name)) {
+    return res.render('signup', { error: 'Name can contain only letters and spaces' });
+  }
+
+  // ✅ Validate password length
+  if (!password || password.length < 6) {
+    return res.render('signup', { error: 'Password must be at least 6 characters' });
+  }
+
+  if (!email)
+    return res.render('signup', { error: 'Email is required' });
 
   const exists = await User.findOne({ email });
   if (exists) return res.render('signup', { error: 'Email already registered' });
@@ -103,6 +114,7 @@ app.post('/signup', async (req, res) => {
 });
 
 app.get('/login', (req, res) => res.render('login', { error: '' }));
+
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password)
@@ -121,6 +133,7 @@ app.get('/logout', (req, res) => {
 
 // Admin login/logout
 app.get('/admin/login', (req, res) => res.render('admin-login', { error: '' }));
+
 app.post('/admin/login', (req, res) => {
   const { username, password } = req.body;
   if (username === 'admin' && password === 'admin') {
@@ -130,14 +143,15 @@ app.post('/admin/login', (req, res) => {
     res.render('admin-login', { error: 'Invalid admin credentials' });
   }
 });
+
 app.get('/admin/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/admin/login'));
 });
 
 // Admin dashboard
 app.get('/admin/dashboard', requireAdmin, async (req, res) => {
-  const lostItems = await LostItem.find().sort({ dateLost: -1 });
-  const foundItems = await FoundItem.find().sort({ dateFound: -1 });
+  const lostItems = await LostItem.find().sort({ dateLost: -1 }).populate('reportedBy');
+  const foundItems = await FoundItem.find().sort({ dateFound: -1 }).populate('reportedBy');
   res.render('admin-dashboard', { lostItems, foundItems });
 });
 
@@ -160,6 +174,7 @@ app.get('/report-found', requireLogin, async (req, res) => {
   const user = await User.findById(req.session.userId);
   res.render('report-found', { user, error: '', success: '' });
 });
+
 app.post('/report-found', requireLogin, async (req, res) => {
   const user = await User.findById(req.session.userId);
   const { title, category, description, location, dateFound } = req.body;
@@ -181,6 +196,7 @@ app.get('/report-lost', requireLogin, async (req, res) => {
   const user = await User.findById(req.session.userId);
   res.render('report-lost', { user, error: '', success: '' });
 });
+
 app.post('/report-lost', requireLogin, async (req, res) => {
   const user = await User.findById(req.session.userId);
   const { title, category, description, location, dateLost } = req.body;

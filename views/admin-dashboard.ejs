@@ -46,9 +46,15 @@
               <div class="card-body">
                 <h5 class="card-title"><%= item.title %></h5>
                 <p class="card-text"><%= item.location %> | Status: <%= item.status %></p>
+                <% if (item.reportedBy && item.reportedBy.name && item.reportedBy.email) { %>
+                  <p class="card-text"><small class="text-muted">
+                    Reported by: <%= item.reportedBy.name %><br>
+                    Email: <%= item.reportedBy.email %>
+                  </small></p>
+                <% } %>
                 <form method="POST" action="/admin/lost/<%= item._id %>/status" class="d-flex gap-2">
                   <button type="submit" name="status" value="accepted" class="btn btn-success btn-sm flex-fill">Accept</button>
-                  <button type="submit" name="status" value="rejected" class="btn btn-danger btn-sm flex-fill">Reject</button>
+                  <button type="button" onclick="confirmReject('lost', '<%= item._id %>', '<%= item.title %>')" class="btn btn-danger btn-sm flex-fill">Reject</button>
                 </form>
               </div>
             </div>
@@ -72,9 +78,15 @@
               <div class="card-body">
                 <h5 class="card-title"><%= item.title %></h5>
                 <p class="card-text"><%= item.location %> | Status: <%= item.status %></p>
+                <% if (item.reportedBy && item.reportedBy.name && item.reportedBy.email) { %>
+                  <p class="card-text"><small class="text-muted">
+                    Reported by: <%= item.reportedBy.name %><br>
+                    Email: <%= item.reportedBy.email %>
+                  </small></p>
+                <% } %>
                 <form method="POST" action="/admin/found/<%= item._id %>/status" class="d-flex gap-2">
                   <button type="submit" name="status" value="accepted" class="btn btn-success btn-sm flex-fill">Accept</button>
-                  <button type="submit" name="status" value="rejected" class="btn btn-danger btn-sm flex-fill">Reject</button>
+                  <button type="button" onclick="confirmReject('found', '<%= item._id %>', '<%= item.title %>')" class="btn btn-danger btn-sm flex-fill">Reject</button>
                 </form>
               </div>
             </div>
@@ -86,5 +98,27 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    function confirmReject(itemType, itemId, itemTitle) {
+      // Show confirmation popup
+      if (confirm(`Do you want to delete this item permanently?\n\nItem: "${itemTitle}"\n\nThis action cannot be undone.`)) {
+        // Create a form dynamically to submit the rejection
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/${itemType}/${itemId}/status`;
+        
+        // Add the status input
+        const statusInput = document.createElement('input');
+        statusInput.type = 'hidden';
+        statusInput.name = 'status';
+        statusInput.value = 'rejected';
+        
+        form.appendChild(statusInput);
+        document.body.appendChild(form);
+        form.submit();
+      }
+    }
+  </script>
 </body>
 </html>

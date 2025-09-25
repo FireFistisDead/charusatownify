@@ -25,7 +25,7 @@ const lostItemSchema = new mongoose.Schema({
   location: String,
   dateLost: Date,
   image: String,
-  status: { type: String, default: 'active' }, // active, accepted, rejected
+  status: { type: String, default: 'pending' }, // pending, accepted, rejected
   reportedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 });
 const LostItem = mongoose.model('LostItem', lostItemSchema);
@@ -37,7 +37,7 @@ const foundItemSchema = new mongoose.Schema({
   location: String,
   dateFound: Date,
   image: String,
-  status: { type: String, default: 'active' },
+  status: { type: String, default: 'pending' },
   reportedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 });
 const FoundItem = mongoose.model('FoundItem', foundItemSchema);
@@ -72,9 +72,11 @@ app.get('/', async (req, res) => {
 
   const user = await User.findById(req.session.userId);
   const lostItems = await LostItem.find({ status: 'accepted' })
+    .populate('reportedBy', 'name email')
     .sort({ dateLost: -1 })
     .limit(5);
   const foundItems = await FoundItem.find({ status: 'accepted' })
+    .populate('reportedBy', 'name email')
     .sort({ dateFound: -1 })
     .limit(5);
 
@@ -148,10 +150,14 @@ app.get('/admin/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/admin/login'));
 });
 
-// Admin dashboard
+// Admin dashboard - only show pending items
 app.get('/admin/dashboard', requireAdmin, async (req, res) => {
-  const lostItems = await LostItem.find().sort({ dateLost: -1 }).populate('reportedBy');
-  const foundItems = await FoundItem.find().sort({ dateFound: -1 }).populate('reportedBy');
+  const lostItems = await LostItem.find()
+    .populate('reportedBy', 'name email')
+    .sort({ dateLost: -1 });
+  const foundItems = await FoundItem.find()
+    .populate('reportedBy', 'name email')
+    .sort({ dateFound: -1 });
   res.render('admin-dashboard', { lostItems, foundItems });
 });
 

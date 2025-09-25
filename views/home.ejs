@@ -74,6 +74,9 @@
               <div class="card-body">
                 <h5 class="card-title"><%= item.title %></h5>
                 <p class="card-text"><%= item.location %> | <%= new Date(item.dateLost).toLocaleDateString() %></p>
+                <% if (item.reportedBy && item.reportedBy.name) { %>
+                  <p class="card-text"><small class="text-muted">Reported by: <%= item.reportedBy.name %></small></p>
+                <% } %>
                 <a href="/lost/<%= item._id %>" class="btn btn-primary btn-sm">View Details</a>
               </div>
             </div>
@@ -97,6 +100,9 @@
               <div class="card-body">
                 <h5 class="card-title"><%= item.title %></h5>
                 <p class="card-text"><%= item.location %> | <%= new Date(item.dateFound).toLocaleDateString() %></p>
+                <% if (item.reportedBy && item.reportedBy.name) { %>
+                  <p class="card-text"><small class="text-muted">Reported by: <%= item.reportedBy.name %></small></p>
+                <% } %>
                 <a href="/found/<%= item._id %>" class="btn btn-primary btn-sm">View Details</a>
               </div>
             </div>

@@ -46,6 +46,12 @@
               <div class="card-body">
                 <h5 class="card-title"><%= item.title %></h5>
                 <p class="card-text"><%= item.location %> | Status: <%= item.status %></p>
+                <% if (item.reportedBy && item.reportedBy.name && item.reportedBy.email) { %>
+                  <p class="card-text"><small class="text-muted">
+                    Reported by: <%= item.reportedBy.name %><br>
+                    Email: <%= item.reportedBy.email %>
+                  </small></p>
+                <% } %>
                 <form method="POST" action="/admin/lost/<%= item._id %>/status" class="d-flex gap-2">
                   <button type="submit" name="status" value="accepted" class="btn btn-success btn-sm flex-fill">Accept</button>
                   <button type="button" onclick="confirmReject('lost', '<%= item._id %>', '<%= item.title %>')" class="btn btn-danger btn-sm flex-fill">Reject</button>
@@ -72,6 +78,12 @@
               <div class="card-body">
                 <h5 class="card-title"><%= item.title %></h5>
                 <p class="card-text"><%= item.location %> | Status: <%= item.status %></p>
+                <% if (item.reportedBy && item.reportedBy.name && item.reportedBy.email) { %>
+                  <p class="card-text"><small class="text-muted">
+                    Reported by: <%= item.reportedBy.name %><br>
+                    Email: <%= item.reportedBy.email %>
+                  </small></p>
+                <% } %>
                 <form method="POST" action="/admin/found/<%= item._id %>/status" class="d-flex gap-2">
                   <button type="submit" name="status" value="accepted" class="btn btn-success btn-sm flex-fill">Accept</button>
                   <button type="button" onclick="confirmReject('found', '<%= item._id %>', '<%= item.title %>')" class="btn btn-danger btn-sm flex-fill">Reject</button>

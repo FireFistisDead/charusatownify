@@ -74,10 +74,15 @@
             </p>
 
             <hr>
-            <p class="mb-0">
-              <strong>Reported by:</strong> 
-              <%= item.reportedBy && item.reportedBy.email ? item.reportedBy.email : 'Unknown' %>
-            </p>
+            <div class="mb-0">
+              <strong>Reported by:</strong><br>
+              <% if (item.reportedBy && item.reportedBy.name && item.reportedBy.email) { %>
+                <i class="fas fa-user"></i> <%= item.reportedBy.name %><br>
+                <i class="fas fa-envelope"></i> <%= item.reportedBy.email %>
+              <% } else { %>
+                Unknown User
+              <% } %>
+            </div>
           </div>
         </div>
 

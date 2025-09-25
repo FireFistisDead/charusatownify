@@ -73,9 +73,11 @@ app.get('/', async (req, res) => {
 
   const user = await User.findById(req.session.userId);
   const lostItems = await LostItem.find({ status: 'accepted' })
+    .populate('reportedBy', 'name email')
     .sort({ dateLost: -1 })
     .limit(5);
   const foundItems = await FoundItem.find({ status: 'accepted' })
+    .populate('reportedBy', 'name email')
     .sort({ dateFound: -1 })
     .limit(5);
 
@@ -136,8 +138,12 @@ app.get('/admin/logout', (req, res) => {
 
 // Admin dashboard
 app.get('/admin/dashboard', requireAdmin, async (req, res) => {
-  const lostItems = await LostItem.find().sort({ dateLost: -1 });
-  const foundItems = await FoundItem.find().sort({ dateFound: -1 });
+  const lostItems = await LostItem.find()
+    .populate('reportedBy', 'name email')
+    .sort({ dateLost: -1 });
+  const foundItems = await FoundItem.find()
+    .populate('reportedBy', 'name email')
+    .sort({ dateFound: -1 });
   res.render('admin-dashboard', { lostItems, foundItems });
 });
 

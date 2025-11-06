@@ -31,9 +31,11 @@
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="/">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="/leaderboard">Leaderboard</a></li>
           <% if (user) { %>
             <li class="nav-item"><a class="nav-link" href="/report-found">Report Found</a></li>
-            <li class="nav-item"><a class="nav-link" href="/report-lost">Report Lost</a></li>
+            <li class="nav-item"><a class="nav-link" href="/report-lost">Report Loss</a></li>
             <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
           <% } else { %>
             <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
@@ -50,7 +52,9 @@
       <div class="col-md-8">
         <div class="card shadow-sm">
           <% if (item.image && item.image.trim() !== '') { %>
-            <img src="<%= item.image %>" class="card-img-top" alt="<%= item.title %>">
+            <div class="img-fit-lg">
+              <img src="<%= item.image %>" alt="<%= item.title %>">
+            </div>
           <% } %>
           <div class="card-body">
             <h3 class="card-title"><%= item.title %></h3>
@@ -87,7 +91,7 @@
         </div>
 
         <div class="text-center mt-3">
-          <a href="/" class="btn btn-primary">Back to Home</a>
+          <a href="/dashboard" class="btn btn-primary">Back to Home</a>
         </div>
       </div>
     </div>

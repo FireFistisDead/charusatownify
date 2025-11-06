@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
+const multer = require('multer');
 const session = require('express-session');
 
 const app = express();
@@ -15,6 +16,7 @@ const userSchema = new mongoose.Schema({
   name: String,
   email: String,
   password: String,
+  points: { type: Number, default: 0 }, // leaderboard points
 });
 const User = mongoose.model('User', userSchema);
 
@@ -56,6 +58,15 @@ app.use(
   })
 );
 
+// Make admin flag available to all views
+app.use((req, res, next) => {
+  res.locals.isAdmin = !!req.session.isAdmin;
+  next();
+});
+
+// File upload setup (store in memory, we'll save as base64 into DB)
+const upload = multer({ storage: multer.memoryStorage() });
+
 // Auth middleware
 function requireLogin(req, res, next) {
   if (!req.session.userId) return res.redirect('/login');
@@ -67,7 +78,15 @@ function requireAdmin(req, res, next) {
 }
 
 // Home page (only accepted items)
-app.get('/', async (req, res) => {
+// Default route -> Login page
+app.get('/', (req, res) => {
+  // If already logged in, send to dashboard
+  if (req.session.userId) return res.redirect('/dashboard');
+  return res.redirect('/login');
+});
+
+// User Dashboard (Home)
+app.get('/dashboard', async (req, res) => {
   if (!req.session.userId) return res.redirect('/login');
 
   const user = await User.findById(req.session.userId);
@@ -81,6 +100,7 @@ app.get('/', async (req, res) => {
     .limit(5);
 
   res.render('home', {
+    user,
     lostItems,
     foundItems,
     loggedIn: true,
@@ -112,7 +132,7 @@ app.post('/signup', async (req, res) => {
 
   const user = await User.create({ name, email, password });
   req.session.userId = user._id;
-  res.redirect('/');
+  res.redirect('/dashboard');
 });
 
 app.get('/login', (req, res) => res.render('login', { error: '' }));
@@ -126,7 +146,7 @@ app.post('/login', async (req, res) => {
   if (!user) return res.render('login', { error: 'Invalid credentials' });
 
   req.session.userId = user._id;
-  res.redirect('/');
+  res.redirect('/dashboard');
 });
 
 app.get('/logout', (req, res) => {
@@ -152,13 +172,18 @@ app.get('/admin/logout', (req, res) => {
 
 // Admin dashboard - only show pending items
 app.get('/admin/dashboard', requireAdmin, async (req, res) => {
-  const lostItems = await LostItem.find({ status: 'pending' })
+  // Support status filter via query (?status=pending|accepted|rejected)
+  const currentStatus = ['pending', 'accepted', 'rejected'].includes(req.query.status)
+    ? req.query.status
+    : 'pending';
+
+  const lostItems = await LostItem.find({ status: currentStatus })
     .populate('reportedBy', 'name email')
     .sort({ dateLost: -1 });
-  const foundItems = await FoundItem.find({ status: 'pending' })
+  const foundItems = await FoundItem.find({ status: currentStatus })
     .populate('reportedBy', 'name email')
     .sort({ dateFound: -1 });
-  res.render('admin-dashboard', { lostItems, foundItems });
+  res.render('admin-dashboard', { lostItems, foundItems, currentStatus });
 });
 
 // Admin accept/reject (Lost)
@@ -180,18 +205,20 @@ app.post('/admin/lost/:id/status', requireAdmin, async (req, res) => {
 
 // Admin accept/reject (Found)
 app.post('/admin/found/:id/status', requireAdmin, async (req, res) => {
-  const status = req.body.status;
-  
-  if (status === 'rejected') {
-    // Delete the item from database if rejected
-    await FoundItem.findByIdAndDelete(req.params.id);
-    console.log(` Found item ${req.params.id} deleted from database`);
-  } else {
-    // Update status if accepted
-    await FoundItem.findByIdAndUpdate(req.params.id, { status });
-    console.log(` Found item ${req.params.id} status updated to ${status}`);
+  const status = req.body.status; // 'accepted' or 'rejected'
+  const item = await FoundItem.findById(req.params.id);
+  if (!item) return res.redirect('/admin/dashboard');
+
+  const wasAccepted = item.status === 'accepted';
+  // Update status
+  item.status = status;
+  await item.save();
+
+  // Award points only when transitioning to accepted from a non-accepted state
+  if (status === 'accepted' && !wasAccepted && item.reportedBy) {
+    await User.findByIdAndUpdate(item.reportedBy, { $inc: { points: 10 } });
   }
-  
+
   res.redirect('/admin/dashboard');
 });
 
@@ -201,11 +228,26 @@ app.get('/report-found', requireLogin, async (req, res) => {
   res.render('report-found', { user, error: '', success: '' });
 });
 
-app.post('/report-found', requireLogin, async (req, res) => {
+app.post('/report-found', requireLogin, upload.single('image'), async (req, res) => {
   const user = await User.findById(req.session.userId);
   const { title, category, description, location, dateFound } = req.body;
   if (!title || !category || !description || !location || !dateFound)
     return res.render('report-found', { user, error: 'All fields required', success: '' });
+
+  // Validate optional image
+  let imageData = '';
+  if (req.file) {
+    const file = req.file;
+    const isImage = file.mimetype && file.mimetype.startsWith('image/');
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (!isImage) {
+      return res.render('report-found', { user, error: 'Only image files are allowed (all image formats supported).', success: '' });
+    }
+    if (file.size > maxSize) {
+      return res.render('report-found', { user, error: 'Image too large. Maximum size is 5 MB.', success: '' });
+    }
+    imageData = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+  }
 
   await FoundItem.create({
     title,
@@ -213,9 +255,10 @@ app.post('/report-found', requireLogin, async (req, res) => {
     description,
     location,
     dateFound: new Date(dateFound),
+    image: imageData,
     reportedBy: user._id,
   });
-  res.render('report-found', { user, error: '', success: 'Found item reported successfully!' });
+  res.render('report-found', { user, error: '', success: 'Found item reported successfully! Awaiting admin approval.' });
 });
 
 app.get('/report-lost', requireLogin, async (req, res) => {
@@ -223,11 +266,26 @@ app.get('/report-lost', requireLogin, async (req, res) => {
   res.render('report-lost', { user, error: '', success: '' });
 });
 
-app.post('/report-lost', requireLogin, async (req, res) => {
+app.post('/report-lost', requireLogin, upload.single('image'), async (req, res) => {
   const user = await User.findById(req.session.userId);
   const { title, category, description, location, dateLost } = req.body;
   if (!title || !category || !description || !location || !dateLost)
     return res.render('report-lost', { user, error: 'All fields required', success: '' });
+
+  // Validate optional image
+  let imageData = '';
+  if (req.file) {
+    const file = req.file;
+    const isImage = file.mimetype && file.mimetype.startsWith('image/');
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (!isImage) {
+      return res.render('report-lost', { user, error: 'Only image files are allowed (all image formats supported).', success: '' });
+    }
+    if (file.size > maxSize) {
+      return res.render('report-lost', { user, error: 'Image too large. Maximum size is 5 MB.', success: '' });
+    }
+    imageData = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+  }
 
   await LostItem.create({
     title,
@@ -235,6 +293,7 @@ app.post('/report-lost', requireLogin, async (req, res) => {
     description,
     location,
     dateLost: new Date(dateLost),
+    image: imageData,
     reportedBy: user._id,
   });
   res.render('report-lost', { user, error: '', success: 'Lost item reported successfully!' });
@@ -253,6 +312,21 @@ app.get('/lost/:id', requireLogin, async (req, res) => {
   const item = await LostItem.findById(req.params.id).populate('reportedBy');
   if (!item) return res.redirect('/');
   res.render('item-details', { user, item, type: 'lost' });
+});
+
+// Leaderboard
+app.get('/leaderboard', async (req, res) => {
+  const currentUser = req.session.userId ? await User.findById(req.session.userId) : null;
+  const topUsers = await User.find({}, 'name email points')
+    .sort({ points: -1, name: 1 })
+    .limit(10)
+    .lean();
+
+  res.render('leaderboard', {
+    user: currentUser,
+    topUsers,
+    isAdmin: !!req.session.isAdmin,
+  });
 });
 
 // Start server

@@ -10,6 +10,28 @@ body {
   color: #fff !important;
 }
 
+/* Navbar spacing and look (consistent across pages) */
+.navbar {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+.navbar .navbar-nav {
+  align-items: center;
+  gap: 0.75rem; /* space between menu items */
+}
+.navbar .nav-link {
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.375rem;
+}
+.navbar .nav-link:hover,
+.navbar .nav-link:focus {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff !important;
+}
+.navbar-brand {
+  font-weight: 600;
+}
+
 form {
   max-width: 400px;
   margin: 40px auto;
@@ -28,4 +50,105 @@ form h2 {
   color: red;
   text-align: center;
   margin-bottom: 10px;
+}
+
+/* Admin: scrollable image area for large uploads */
+.admin-img-scroll {
+  max-height: 300px;
+  overflow: auto; /* show scrollbars if image is tall/wide */
+  border-radius: 0.5rem;
+}
+.admin-img-scroll img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Admin: fit image perfectly inside fixed area */
+.admin-img-fit {
+  height: 220px; /* consistent card header area */
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden; /* hide overflow but we contain image */
+  border-radius: 0.5rem;
+}
+.admin-img-fit img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; /* show whole image */
+  display: block;
+}
+
+/* User pages: fit images nicely in cards and details */
+.img-fit {
+  height: 200px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 0.5rem;
+}
+.img-fit img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.img-fit-lg {
+  height: 320px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 0.5rem;
+}
+.img-fit-lg img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Flipkart-like square thumbnail */
+.thumb-square {
+  width: 100%;
+  aspect-ratio: 1 / 1; /* square */
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.thumb-square img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* fill square, crop gracefully */
+  display: block;
+}
+
+/* Myntra-like square product thumbnail: fixed max size, centered */
+.myntra-thumb {
+  width: 100%;
+  max-width: 260px; /* adjust for desired size */
+  aspect-ratio: 1 / 1; /* perfect square */
+  background: #fff;
+  border: 1px solid #eaeaea;
+  border-radius: 8px;
+  margin: 0 auto; /* center inside card */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.myntra-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* crop to fill square like catalog tiles */
+  display: block;
 }

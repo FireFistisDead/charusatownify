@@ -14,7 +14,7 @@
             <div class="alert alert-success"><%= success %></div>
           <% } %>
 
-          <form action="/report-lost" method="post">
+          <form action="/report-lost" method="post" enctype="multipart/form-data">
             <div class="mb-3">
               <label class="form-label">Title</label>
               <input type="text" name="title" class="form-control" placeholder="e.g. Lost Wallet" required>
@@ -45,6 +45,12 @@
             <div class="mb-3">
               <label class="form-label">Date Lost</label>
               <input type="date" name="dateLost" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Image (optional, max 5MB)</label>
+              <input type="file" name="image" class="form-control" accept="image/*">
+              <div class="form-text">All image formats are supported.</div>
             </div>
 
             <button type="submit" class="btn w-100" style="background-color:rgb(0,102,179);color:#fff;">Submit Report</button>

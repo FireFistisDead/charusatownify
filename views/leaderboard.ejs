@@ -1,0 +1,72 @@
+<%- include('partials/header', { user: user }) %>
+
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0" style="color:rgb(0,102,179)">Leaderboard</h2>
+    <div>
+  <a href="/dashboard" class="btn btn-outline-primary btn-sm">User Dashboard</a>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Top Contributors</h5>
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th class="text-end">Points</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (topUsers.length === 0) { %>
+                  <tr><td colspan="4" class="text-center">No users yet.</td></tr>
+                <% } else { %>
+                  <% topUsers.forEach((u, idx) => { %>
+                    <tr>
+                      <td><%= idx + 1 %></td>
+                      <td><%= u.name %></td>
+                      <td><%= u.email %></td>
+                      <td class="text-end"><strong><%= u.points || 0 %></strong></td>
+                    </tr>
+                  <% }) %>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4 mt-3 mt-lg-0">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6>Your Standing</h6>
+          <% if (user) { %>
+            <p class="mb-1"><strong><%= user.name %></strong></p>
+            <p class="text-muted mb-2"><%= user.email %></p>
+            <p class="mb-0">Points: <span class="badge bg-primary"><%= user.points || 0 %></span></p>
+          <% } else { %>
+            <p>Login to see your points.</p>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="card shadow-sm mt-3">
+        <div class="card-body">
+          <h6>How to earn points?</h6>
+          <ul class="mb-0">
+            <li>Admin accepts your found report: +10 points</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

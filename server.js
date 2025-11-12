@@ -189,15 +189,23 @@ app.get('/admin/dashboard', requireAdmin, async (req, res) => {
 // Admin accept/reject (Lost)
 app.post('/admin/lost/:id/status', requireAdmin, async (req, res) => {
   const status = req.body.status; // accepted or rejected
+  const item = await LostItem.findById(req.params.id);
+  if (!item) return res.redirect('/admin/dashboard');
   
   if (status === 'rejected') {
     // Delete the item from database if rejected
     await LostItem.findByIdAndDelete(req.params.id);
     console.log(` Lost item ${req.params.id} deleted from database`);
-  } else {
-    // Update status if accepted
-    await LostItem.findByIdAndUpdate(req.params.id, { status });
-    console.log(` Lost item ${req.params.id} status updated to ${status}`);
+  } else if (status === 'accepted') {
+    // Update status to accepted and award 10 points to user
+    item.status = status;
+    await item.save();
+    
+    // Award 10 points to user who reported the item
+    if (item.reportedBy) {
+      await User.findByIdAndUpdate(item.reportedBy, { $inc: { points: 10 } });
+      console.log(`Lost item ${req.params.id} accepted. 10 points awarded to user`);
+    }
   }
   
   res.redirect('/admin/dashboard');
@@ -209,14 +217,20 @@ app.post('/admin/found/:id/status', requireAdmin, async (req, res) => {
   const item = await FoundItem.findById(req.params.id);
   if (!item) return res.redirect('/admin/dashboard');
 
-  const wasAccepted = item.status === 'accepted';
-  // Update status
-  item.status = status;
-  await item.save();
+  if (status === 'rejected') {
+    // Delete the item from database if rejected
+    await FoundItem.findByIdAndDelete(req.params.id);
+    console.log(`Found item ${req.params.id} deleted from database`);
+  } else if (status === 'accepted') {
+    // Update status to accepted and award 10 points to user
+    item.status = status;
+    await item.save();
 
-  // Award points only when transitioning to accepted from a non-accepted state
-  if (status === 'accepted' && !wasAccepted && item.reportedBy) {
-    await User.findByIdAndUpdate(item.reportedBy, { $inc: { points: 10 } });
+    // Award 10 points to user who reported the item
+    if (item.reportedBy) {
+      await User.findByIdAndUpdate(item.reportedBy, { $inc: { points: 10 } });
+      console.log(`Found item ${req.params.id} accepted. 10 points awarded to user`);
+    }
   }
 
   res.redirect('/admin/dashboard');

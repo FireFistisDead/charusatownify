@@ -6,7 +6,7 @@ const session = require('express-session');
 
 const app = express();
 
-// ✅ MongoDB connect (removed deprecated options)
+//  MongoDB connect (removed deprecated options)
 mongoose.connect('mongodb://127.0.0.1:27017/charusat_ownify')
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
@@ -114,12 +114,12 @@ app.get('/signup', (req, res) => res.render('signup', { error: '' }));
 app.post('/signup', async (req, res) => {
   let { name, email, password } = req.body;
 
-  // ✅ Validate name (letters and spaces only)
+  //  Validate name (letters and spaces only)
   if (!/^[A-Za-z\s]+$/.test(name)) {
     return res.render('signup', { error: 'Name can contain only letters and spaces' });
   }
 
-  // ✅ Validate password length
+  //  Validate password length
   if (!password || password.length < 6) {
     return res.render('signup', { error: 'Password must be at least 6 characters' });
   }
@@ -189,7 +189,25 @@ app.get('/admin/dashboard', requireAdmin, async (req, res) => {
 // Admin accept/reject (Lost)
 app.post('/admin/lost/:id/status', requireAdmin, async (req, res) => {
   const status = req.body.status; // accepted or rejected
-  await LostItem.findByIdAndUpdate(req.params.id, { status });
+  const item = await LostItem.findById(req.params.id);
+  if (!item) return res.redirect('/admin/dashboard');
+  
+  if (status === 'rejected') {
+    // Delete the item from database if rejected
+    await LostItem.findByIdAndDelete(req.params.id);
+    console.log(` Lost item ${req.params.id} deleted from database`);
+  } else if (status === 'accepted') {
+    // Update status to accepted and award 10 points to user
+    item.status = status;
+    await item.save();
+    
+    // Award 10 points to user who reported the item
+    if (item.reportedBy) {
+      await User.findByIdAndUpdate(item.reportedBy, { $inc: { points: 10 } });
+      console.log(`Lost item ${req.params.id} accepted. 10 points awarded to user`);
+    }
+  }
+  
   res.redirect('/admin/dashboard');
 });
 
@@ -199,14 +217,20 @@ app.post('/admin/found/:id/status', requireAdmin, async (req, res) => {
   const item = await FoundItem.findById(req.params.id);
   if (!item) return res.redirect('/admin/dashboard');
 
-  const wasAccepted = item.status === 'accepted';
-  // Update status
-  item.status = status;
-  await item.save();
+  if (status === 'rejected') {
+    // Delete the item from database if rejected
+    await FoundItem.findByIdAndDelete(req.params.id);
+    console.log(`Found item ${req.params.id} deleted from database`);
+  } else if (status === 'accepted') {
+    // Update status to accepted and award 10 points to user
+    item.status = status;
+    await item.save();
 
-  // Award points only when transitioning to accepted from a non-accepted state
-  if (status === 'accepted' && !wasAccepted && item.reportedBy) {
-    await User.findByIdAndUpdate(item.reportedBy, { $inc: { points: 10 } });
+    // Award 10 points to user who reported the item
+    if (item.reportedBy) {
+      await User.findByIdAndUpdate(item.reportedBy, { $inc: { points: 10 } });
+      console.log(`Found item ${req.params.id} accepted. 10 points awarded to user`);
+    }
   }
 
   res.redirect('/admin/dashboard');

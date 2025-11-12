@@ -1,0 +1,92 @@
+<%- include('partials/header', { user: user }) %>
+
+<div class="container mt-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2 class="mb-4">My Profile</h2>
+      <div class="card shadow-sm p-4 mb-4">
+        <h5 class="card-title">User Information</h5>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="fw-bold">Name:</label>
+            <p><%= user.name %></p>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="fw-bold">Email:</label>
+            <p><%= user.email %></p>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="fw-bold">Total Points:</label>
+            <p class="badge bg-success fs-6"><%= user.points || 0 %> pts</p>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="fw-bold">Member Since:</label>
+            <p><%= new Date(user.createdAt).toLocaleDateString() %></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm p-4">
+        <h5 class="card-title">Statistics</h5>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <div class="p-3 bg-light rounded">
+              <h6 class="text-muted">Items Reported</h6>
+              <h3 class="text-primary"><%= totalItemsReported %></h3>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="p-3 bg-light rounded">
+              <h6 class="text-muted">Items Accepted</h6>
+              <h3 class="text-success"><%= acceptedItems %></h3>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="p-3 bg-light rounded">
+              <h6 class="text-muted">Lost Items Reported</h6>
+              <h3><%= lostItemsReported %></h3>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="p-3 bg-light rounded">
+              <h6 class="text-muted">Found Items Reported</h6>
+              <h3><%= foundItemsReported %></h3>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm p-4 bg-primary text-white">
+        <h5 class="card-title">Quick Actions</h5>
+        <a href="/report-lost" class="btn btn-light w-100 mb-2">Report Lost Item</a>
+        <a href="/report-found" class="btn btn-light w-100 mb-2">Report Found Item</a>
+        <a href="/leaderboard" class="btn btn-light w-100 mb-2">View Leaderboard</a>
+        <a href="/logout" class="btn btn-outline-light w-100">Logout</a>
+      </div>
+
+      <div class="card shadow-sm p-4 mt-3">
+        <h6>Achievement Level</h6>
+        <div class="d-flex align-items-center">
+          <span class="me-3">
+            <% if (user.points < 20) { %>
+              🌱 Beginner
+            <% } else if (user.points < 50) { %>
+              📈 Growing
+            <% } else if (user.points < 100) { %>
+              ⭐ Active
+            <% } else if (user.points < 200) { %>
+              🌟 Expert
+            <% } else { %>
+              👑 Legend
+            <% } %>
+          </span>
+          <small class="text-muted">Keep contributing to earn more points!</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

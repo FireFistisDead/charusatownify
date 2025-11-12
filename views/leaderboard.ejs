@@ -20,19 +20,21 @@
                   <th>#</th>
                   <th>Name</th>
                   <th>Email</th>
+                  <th class="text-center">Accepted</th>
                   <th class="text-end">Points</th>
                 </tr>
               </thead>
               <tbody>
                 <% if (topUsers.length === 0) { %>
-                  <tr><td colspan="4" class="text-center">No users yet.</td></tr>
+                  <tr><td colspan="5" class="text-center">No users yet.</td></tr>
                 <% } else { %>
                   <% topUsers.forEach((u, idx) => { %>
                     <tr>
-                      <td><%= idx + 1 %></td>
+                      <td><strong><%= idx + 1 %></strong></td>
                       <td><%= u.name %></td>
                       <td><%= u.email %></td>
-                      <td class="text-end"><strong><%= u.points || 0 %></strong></td>
+                      <td class="text-center"><span class="badge bg-info"><%= u.itemsAccepted || 0 %></span></td>
+                      <td class="text-end"><strong style="color: rgb(0,102,179);"><%= u.points || 0 %></strong></td>
                     </tr>
                   <% }) %>
                 <% } %>

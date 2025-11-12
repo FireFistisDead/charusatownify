@@ -17,6 +17,9 @@ const userSchema = new mongoose.Schema({
   email: String,
   password: String,
   points: { type: Number, default: 0 }, // leaderboard points
+  createdAt: { type: Date, default: Date.now },
+  itemsReported: { type: Number, default: 0 },
+  itemsAccepted: { type: Number, default: 0 },
 });
 const User = mongoose.model('User', userSchema);
 
@@ -29,6 +32,8 @@ const lostItemSchema = new mongoose.Schema({
   image: String,
   status: { type: String, default: 'pending' }, // pending, accepted, rejected
   reportedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  createdAt: { type: Date, default: Date.now },
+  views: { type: Number, default: 0 },
 });
 const LostItem = mongoose.model('LostItem', lostItemSchema);
 
@@ -41,6 +46,8 @@ const foundItemSchema = new mongoose.Schema({
   image: String,
   status: { type: String, default: 'pending' },
   reportedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  createdAt: { type: Date, default: Date.now },
+  views: { type: Number, default: 0 },
 });
 const FoundItem = mongoose.model('FoundItem', foundItemSchema);
 
@@ -66,6 +73,12 @@ app.use((req, res, next) => {
 
 // File upload setup (store in memory, we'll save as base64 into DB)
 const upload = multer({ storage: multer.memoryStorage() });
+
+// Utility function to sanitize and validate input
+function sanitizeInput(input) {
+  if (!input) return '';
+  return input.trim().substring(0, 500).replace(/[<>]/g, '');
+}
 
 // Auth middleware
 function requireLogin(req, res, next) {
@@ -114,18 +127,28 @@ app.get('/signup', (req, res) => res.render('signup', { error: '' }));
 app.post('/signup', async (req, res) => {
   let { name, email, password } = req.body;
 
+  // Sanitize inputs
+  name = sanitizeInput(name);
+  email = sanitizeInput(email).toLowerCase();
+
   //  Validate name (letters and spaces only)
   if (!/^[A-Za-z\s]+$/.test(name)) {
     return res.render('signup', { error: 'Name can contain only letters and spaces' });
+  }
+
+  if (name.length < 2) {
+    return res.render('signup', { error: 'Name must be at least 2 characters' });
+  }
+
+  //  Validate email format
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.render('signup', { error: 'Please enter a valid email address' });
   }
 
   //  Validate password length
   if (!password || password.length < 6) {
     return res.render('signup', { error: 'Password must be at least 6 characters' });
   }
-
-  if (!email)
-    return res.render('signup', { error: 'Email is required' });
 
   const exists = await User.findOne({ email });
   if (exists) return res.render('signup', { error: 'Email already registered' });
@@ -195,15 +218,23 @@ app.post('/admin/lost/:id/status', requireAdmin, async (req, res) => {
   if (status === 'rejected') {
     // Delete the item from database if rejected
     await LostItem.findByIdAndDelete(req.params.id);
-    console.log(` Lost item ${req.params.id} deleted from database`);
+    console.log(`Lost item ${req.params.id} deleted from database`);
   } else if (status === 'accepted') {
     // Update status to accepted and award 10 points to user
     item.status = status;
     await item.save();
     
-    // Award 10 points to user who reported the item
+    // Award 10 points to user who reported the item and track stats
     if (item.reportedBy) {
-      await User.findByIdAndUpdate(item.reportedBy, { $inc: { points: 10 } });
+      await User.findByIdAndUpdate(
+        item.reportedBy, 
+        { 
+          $inc: { 
+            points: 10,
+            itemsAccepted: 1 
+          } 
+        }
+      );
       console.log(`Lost item ${req.params.id} accepted. 10 points awarded to user`);
     }
   }
@@ -226,14 +257,37 @@ app.post('/admin/found/:id/status', requireAdmin, async (req, res) => {
     item.status = status;
     await item.save();
 
-    // Award 10 points to user who reported the item
+    // Award 10 points to user who reported the item and track stats
     if (item.reportedBy) {
-      await User.findByIdAndUpdate(item.reportedBy, { $inc: { points: 10 } });
+      await User.findByIdAndUpdate(
+        item.reportedBy, 
+        { 
+          $inc: { 
+            points: 10,
+            itemsAccepted: 1 
+          } 
+        }
+      );
       console.log(`Found item ${req.params.id} accepted. 10 points awarded to user`);
     }
   }
 
   res.redirect('/admin/dashboard');
+});
+
+// User Profile/Dashboard with stats
+app.get('/profile', requireLogin, async (req, res) => {
+  const user = await User.findById(req.session.userId);
+  const userLostItems = await LostItem.find({ reportedBy: user._id }).countDocuments();
+  const userFoundItems = await FoundItem.find({ reportedBy: user._id }).countDocuments();
+  
+  res.render('profile', {
+    user,
+    totalItemsReported: userLostItems + userFoundItems,
+    lostItemsReported: userLostItems,
+    foundItemsReported: userFoundItems,
+    acceptedItems: user.itemsAccepted || 0,
+  });
 });
 
 // Report Found/Lost
@@ -244,7 +298,14 @@ app.get('/report-found', requireLogin, async (req, res) => {
 
 app.post('/report-found', requireLogin, upload.single('image'), async (req, res) => {
   const user = await User.findById(req.session.userId);
-  const { title, category, description, location, dateFound } = req.body;
+  let { title, category, description, location, dateFound } = req.body;
+  
+  // Sanitize inputs
+  title = sanitizeInput(title);
+  category = sanitizeInput(category);
+  description = sanitizeInput(description);
+  location = sanitizeInput(location);
+  
   if (!title || !category || !description || !location || !dateFound)
     return res.render('report-found', { user, error: 'All fields required', success: '' });
 
@@ -272,6 +333,10 @@ app.post('/report-found', requireLogin, upload.single('image'), async (req, res)
     image: imageData,
     reportedBy: user._id,
   });
+  
+  // Track item reported
+  await User.findByIdAndUpdate(user._id, { $inc: { itemsReported: 1 } });
+  
   res.render('report-found', { user, error: '', success: 'Found item reported successfully! Awaiting admin approval.' });
 });
 
@@ -282,7 +347,14 @@ app.get('/report-lost', requireLogin, async (req, res) => {
 
 app.post('/report-lost', requireLogin, upload.single('image'), async (req, res) => {
   const user = await User.findById(req.session.userId);
-  const { title, category, description, location, dateLost } = req.body;
+  let { title, category, description, location, dateLost } = req.body;
+  
+  // Sanitize inputs
+  title = sanitizeInput(title);
+  category = sanitizeInput(category);
+  description = sanitizeInput(description);
+  location = sanitizeInput(location);
+  
   if (!title || !category || !description || !location || !dateLost)
     return res.render('report-lost', { user, error: 'All fields required', success: '' });
 
@@ -310,6 +382,10 @@ app.post('/report-lost', requireLogin, upload.single('image'), async (req, res) 
     image: imageData,
     reportedBy: user._id,
   });
+  
+  // Track item reported
+  await User.findByIdAndUpdate(user._id, { $inc: { itemsReported: 1 } });
+  
   res.render('report-lost', { user, error: '', success: 'Lost item reported successfully!' });
 });
 
@@ -331,7 +407,7 @@ app.get('/lost/:id', requireLogin, async (req, res) => {
 // Leaderboard
 app.get('/leaderboard', async (req, res) => {
   const currentUser = req.session.userId ? await User.findById(req.session.userId) : null;
-  const topUsers = await User.find({}, 'name email points')
+  const topUsers = await User.find({}, 'name email points itemsAccepted itemsReported')
     .sort({ points: -1, name: 1 })
     .limit(10)
     .lean();
